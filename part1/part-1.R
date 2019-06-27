@@ -1,12 +1,23 @@
+# load packages
+library(plotrix) # for standard error function
+library(tidyverse) # this includes dplyr for data wranling, ggplot2 for plotting, and tidyr for reshaping data
+library(shiny)
+
 #import file
 path <- file.choose()
 print(path)
 
-#read data as dataframe
+#read data 
 data <- read.csv(path)
-data <- data.frame(data)
 print(colnames(data))
+unique(data$ï..Well.Name)
 
-#subset the data by selection
-columns_select <- scan()
+#Group the data
+#group_by <- readline(prompt="Enter paramters: ")
+#print(group_by)
+
+#subset the data
+#well_select<-scan()
+
+#calculation (mean and SEM)
 
