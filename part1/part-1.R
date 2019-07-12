@@ -55,7 +55,7 @@ if (interactive()) {
       mainPanel(
         #tabset for plot, summary and table
         tabsetPanel(
-          tabPanel("Plot", plotOutput("plot")), 
+          tabPanel("Plot", plotOutput("plot"),downloadButton('Save', 'save')), 
           tabPanel("Table", dataTableOutput("table")),
           tabPanel("Summary", verbatimTextOutput("summary")) 
         )
@@ -72,6 +72,11 @@ if (interactive()) {
         return(NULL)
       
       read.csv(inFile$datapath, header = TRUE)
+    })
+    
+    #plot
+    output$plot <- renderPlot({
+
     })
   }
   
