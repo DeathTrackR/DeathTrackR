@@ -30,9 +30,6 @@ if (interactive()) {
                       uiOutput("loc"), # placeholder for time series selector if time series data selected
                       selectInput("field", "Choose a field:",
                                   NULL,multiple = FALSE),
-                      # slider range for timepoint
-                      sliderInput("slider", label = h5(strong("Time Point")), min = 1, 
-                                  max = 46, value = c(0, 46)),
                       #checkboxGroupInput("calculation", label = "Calculation",choices = c("Mean","SEM"))
                       uiOutput("calculation"),
                       actionButton('plot_button','Plot')
@@ -52,9 +49,13 @@ if (interactive()) {
     observeEvent(input$file1,{
       df<<- read_csv(input$file1$datapath)
       output$loc<-renderUI({
-        selectInput("loc", label = "Choose time point",
-                    choices = unique(df[,3]) ,selected = 1
-        )
+        df<- read_csv(input$file1$datapath)
+        # slider range for timepoint
+        max_num <- as.integer(tail(unique(df[,3]),n=1))
+        sliderInput("slider", label = h5(strong("Time Point")), min = 1, 
+                    max = max_num, step=1,
+                    value = c(1, max_num)
+                    )
       })
       #updateSelectInput(session, 'time point', choices = list(1,2,3,4,5) )
       updateSelectInput(session,"wells",choices = unique(df[,1]))
@@ -84,8 +85,10 @@ if (interactive()) {
         
         if(!is.na(df)){
           output$loc<-renderUI({
-            selectInput("loc", label = "Choose time point",
-                        choices = unique(df[,3]) ,selected = 1
+            max_num <- as.integer(tail(unique(df[,3]),n=1))
+            sliderInput("slider", label = h5(strong("Time Point")), min = 1, 
+                        max = max_num,step=1, 
+                        value = c(1, max_num)
             )
           })
         }
