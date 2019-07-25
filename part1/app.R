@@ -6,6 +6,7 @@ library(plotrix) # for standard error function
 
 df<-NA
 aa<-FALSE
+current <<-0
 
 #shiny
 if (interactive()) {
@@ -30,7 +31,8 @@ if (interactive()) {
                       uiOutput("loc"), # placeholder for time series selector if time series data selected
                       selectInput("field", "Choose a field:",
                                   NULL,multiple = FALSE),
-                      #checkboxGroupInput("calculation", label = "Calculation",choices = c("Mean","SEM"))
+                      actionButton("add","Add"),
+                      actionButton("delete","Delete"),
                       uiOutput("calculation"),
                       actionButton('plot_button','Plot')
                     ),
@@ -45,11 +47,21 @@ if (interactive()) {
                   )
   )
   server <- function(input, output,session) {
+    
+    #function for uploading the file
+    data <- reactive({
+      #display csv file
+      inFile <- input$file1
+      if (is.null(inFile))
+        return(NULL)
+      data <- read.csv(inFile$datapath, header = TRUE)
+      data
+    })
+    
     # set the selector choices based on wells and parameters in input dataset
     observeEvent(input$file1,{
       df<<- read_csv(input$file1$datapath)
       output$loc<-renderUI({
-        df<- read_csv(input$file1$datapath)
         # slider range for timepoint
         max_num <- as.integer(tail(unique(df[,3]),n=1))
         sliderInput("slider", label = h5(strong("Time Point")), min = 1, 
@@ -136,11 +148,29 @@ if (interactive()) {
         summary(dat)
       })
     })
+    
+    #add button
+    observeEvent(input$add, {
+      current <<- current+1
+      insertUI(
+        selector = "#add",
+        where = "beforeBegin",
+        ui = selectInput(paste("group",current,sep=""), paste("Group:",current),
+                         list('well name'=unique(data()[,1])),multiple = TRUE)
+      )
+      print(paste("group",current))
+    })
+    
+    #delete button
+    observeEvent(input$delete, {
+      ui_todelete <- paste("div:has(>> #group",current, ")",sep="")
+      removeUI(
+        selector = ui_todelete
+      )
+      current <<- current-1
+    })
         
         
-      
-        
-      
     # output$table <- renderDataTable({
     #   #import file
     #   #filter the dataset based on parameter and wells users interested in
