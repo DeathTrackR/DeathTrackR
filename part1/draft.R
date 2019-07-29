@@ -9,7 +9,6 @@ library(colourpicker)
 
 df<-NA
 aa<-FALSE
-current <<-0
 
 #shiny
 if (interactive()) {
@@ -27,7 +26,7 @@ if (interactive()) {
                       ),
                       #selector for graph type
                       selectInput("graph", "Choose a type of graph:",
-                                  choice=c("initial","stacked","error bar","time series"),
+                                  choice=c("initial","stacked"),
                                   selected = "initial",
                                   multiple = FALSE),
                       uiOutput("loc"),#parameter selector holder
@@ -45,7 +44,7 @@ if (interactive()) {
                       tabsetPanel(
                         tabPanel("Plot", plotOutput("plot"),downloadButton('save_p', 'Save')), 
                         tabPanel("Table", dataTableOutput("table"),downloadButton('save_t', 'Save')),
-                        tabPanel("Summary", textOutput("summary"),downloadButton('save_s', 'Save'))
+                        tabPanel("Summary", tableOutput("summary"),downloadButton('save_s', 'Save'))
                       )
                     )#end of main panel
                   )
@@ -81,18 +80,6 @@ if (interactive()) {
                         choices = colnames(data()),multiple = TRUE)
           )
           })
-        }
-      #parameter selectors for error bar
-      else if(input$graph=="error bar"){
-        output$loc<-renderUI({
-          list(
-            selectInput("group_by", "Group by:",
-                      choices = colnames(data()),multiple = FALSE),
-            selectInput("error_var", "Choose a variable:",
-                        choices = colnames(data()),multiple = FALSE)
-          )
-        })
-        
       }
       
     })#end of observeEvent for graph selector
@@ -101,7 +88,7 @@ if (interactive()) {
     observeEvent(input$set,{
       output$treat<-renderUI({
         if(input$set==TRUE){
-          current<<-0
+          current(0)
           list(
             actionButton("add","Add"),
             actionButton("delete","Delete")
@@ -124,27 +111,57 @@ if (interactive()) {
     
     #add button
     observeEvent(input$add, {
-      current <<- current+1
+      newValue <- current() + 1
+      current(newValue)
       insertUI(
         selector = "#add",
         where = "beforeBegin",
-        ui = selectInput(paste("group",current,sep=""), paste("Treatment:",current),
+        ui = selectInput(paste("group",current(),sep=""), paste("Treatment:",current()),
                          list('well name'=unique(data()[,1])),multiple = TRUE)
       )
     })
     
     #delete button
     observeEvent(input$delete, {
-      ui_todelete <- paste("div:has(>> #group",current, ")",sep="")
+      ui_todelete <- paste("div:has(>> #group",current(), ")",sep="")
       removeUI(
         selector = ui_todelete
       )
-      current <<- current-1
+      newValue <- current() - 1
+      current(newValue)
     })
     
+    #table tabpanel output
     output$table <- renderDataTable({
       #display dataframe
       data()
+    })
+    
+    #Get current
+    current <- reactiveVal(0)
+    
+    #Collect all treatment inputs
+    all_treat <- reactive({
+      result <- list(current())
+      for (i in seq(current())) {
+        treat<-c(input[[paste0("group",as.character(i))]])
+        result[[i]] <- treat
+      }
+      #x <- reactiveValuesToList(result)
+      #x
+      print(result)
+      result
+    })
+    
+    output$summary <- renderTable({
+      all_treat()
+    })
+    
+    observeEvent(input$graph,{
+      output$plot <- renderPlot({
+        if(input$graph=="stacked"){
+          }
+        })
     })
     
     
