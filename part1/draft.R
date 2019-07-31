@@ -27,8 +27,8 @@ if (interactive()) {
                       ),
                       #selector for graph type
                       selectInput("graph", "Choose a type of graph:",
-                                  choice=c("initial","stacked"),
-                                  selected = "initial",
+                                  choice=c("linear","stacked"),
+                                  selected = "linear",
                                   multiple = FALSE),
                       uiOutput("loc"),#parameter selector holder
                       uiOutput("time_range"),
@@ -63,7 +63,7 @@ if (interactive()) {
     #observeEvent for graph selector 
     observeEvent(c(input$graph,input$file1),{
       #initial page for graph selector
-      if(input$graph=="initial"){
+      if(input$graph=="linear"){
         #no other selector will show up
         output$loc<-renderUI({
           selectInput("stacked_var", "Choose a stacked variable:",
@@ -189,8 +189,8 @@ if (interactive()) {
             ggplotly(p)
           })
         }
-      #plot a line graph if user click initial
-      else if(input$graph =="initial"){
+      #plot a line graph if user click linear
+      else if(input$graph =="linear"){
         df_cal <- stack_df%>%
           group_by(GROUP,Time.Point,ï..Well.Name)%>%
           summarize_all(list(~mean(.)))%>%
