@@ -5,6 +5,7 @@ library(shinythemes)
 library(gridExtra)
 library(colourpicker)
 library(plotly)
+library(ggsci)
 #library(DT)
 
 
@@ -198,9 +199,9 @@ if (interactive()) {
           gather(key = "variable", value = "value", -ï..Well.Name, -Time.Point,-GROUP)
         output$plot <- renderPlotly({
           p <- 
-            ggplot(df_cal,aes(x = Time.Point, y = value)) +
+            ggplot(df_cal,aes(x = Time.Point, y = value, fill = GROUP)) +
             #making bars from only means
-            geom_point(aes(fill = GROUP))+geom_smooth()+theme_classic()+ scale_fill_manual(values=color_flag)+facet_wrap(~variable)
+            geom_point()+geom_smooth()+theme_classic()+ facet_wrap(~variable)
           ggplotly(p)
         })
       }
