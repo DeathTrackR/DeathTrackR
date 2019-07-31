@@ -51,7 +51,7 @@ if (interactive()) {
                     "",multiple = TRUE),
         # uiOutput("selecters"),
         selectInput("fields", "Choose a field:",
-                    NULL,multiple = TRUE),
+                    list(1,2,3),multiple = TRUE),
         checkboxGroupInput("calculation", 
                     label = "Calculation",choices = c("Mean","SEM"))
         
