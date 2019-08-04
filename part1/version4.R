@@ -11,10 +11,11 @@ df<-NA
 aa<-FALSE
 
 #shiny
+#YL build structure
 if (interactive()) {
   #build up ui
   ui <- fluidPage(theme = shinytheme("cerulean"),
-                  titlePanel("Ben Lab"),
+                  titlePanel("Death TrackR"),
                   sidebarLayout(
                     sidebarPanel(
                       #file upload
@@ -26,8 +27,8 @@ if (interactive()) {
                       ),
                       #selector for graph type
                       selectInput("graph", "Choose a type of graph:",
-                                  choice=c("initial","stacked"),
-                                  selected = "initial",
+                                  choice=c("Default","Stacked","Linear"),
+                                  selected = "Default",
                                   multiple = FALSE),
                       uiOutput("loc"),#parameter selector holder
                       checkboxInput("time", label = "Set range of timepoint", value = FALSE),
@@ -73,13 +74,16 @@ if (interactive()) {
       #parameter selectors for stacked graph
       else if(input$graph=="Stacked"){
         output$loc<-renderUI({
-          list(
-            selectInput("stacked_var", "Choose a stacked variable:",
-                        choices = colnames(data()),multiple = FALSE),
-            selectInput("segment_var", "Choose a segment variable:",
+            selectInput("segment_var", "Choose segment variables:",
                         choices = colnames(data()),multiple = TRUE)
-          )
           })
+      }
+      #parameter selectors for linear graph
+      else if(input$graph=="Linear"){
+        output$loc<-renderUI({
+          selectInput("variables", "Choose variables:",
+                      choices = colnames(data()),multiple = TRUE)
+        })
       }
       
     })#end of observeEvent for graph selector
