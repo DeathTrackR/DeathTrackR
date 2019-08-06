@@ -4,8 +4,6 @@ library(plotrix) # for standard error function
 library(shinythemes)
 library(gridExtra)
 library(colourpicker)
-library(plotly)
-library(ggsci)
 #library(DT)
 
 
@@ -13,10 +11,11 @@ df<-NA
 aa<-FALSE
 
 #shiny
+#YL build structure
 if (interactive()) {
   #build up ui
   ui <- fluidPage(theme = shinytheme("cerulean"),
-                  titlePanel("Death Track R"),
+                  titlePanel("Death TrackR"),
                   sidebarLayout(
                     sidebarPanel(
                       #file upload
@@ -27,19 +26,24 @@ if (interactive()) {
                                   ".csv"),
                       ),
                       #selector for graph type
-                      uiOutput("graph"),
-                      #selector for choosing parameter
-                      uiOutput("loc"),
+                      selectInput("graph", "Choose a type of graph:",
+                                  choice=c("Default","Stacked","Linear"),
+                                  selected = "Default",
+                                  multiple = FALSE),
+                      uiOutput("loc"),#parameter selector holder
+                      checkboxInput("time", label = "Set range of timepoint", value = FALSE),
                       uiOutput("time_range"),
                       checkboxInput("set", label = "Set Treatment", value = FALSE),
                       uiOutput("treat"),
+                      #actionButton("add","Add"),
+                      #actionButton("delete","Delete"),
                       actionButton('plot_button','Plot')
-                      
+
                     ),#end of siderbar panel
                     mainPanel(
                       #tabset for plot, summary and table
                       tabsetPanel(
-                        tabPanel("Plot", plotlyOutput("plot",width = "100%",height = "600px"),uiOutput("color"),downloadButton('save_p', 'Save')), 
+                        tabPanel("Plot", plotOutput("plot"),downloadButton('save_p', 'Save')), 
                         tabPanel("Table", dataTableOutput("table"),downloadButton('save_t', 'Save')),
                         tabPanel("Summary", tableOutput("summary"),downloadButton('save_s', 'Save'))
                       )
@@ -58,54 +62,31 @@ if (interactive()) {
       df <- read.csv(inFile$datapath, header = TRUE)
       df
     })
-    
-    #graph selector displays after the input file imported
-    observeEvent(input$file1,{
-      output$graph <- renderUI({
-        selectInput("graph", "Choose a type of graph:",
-                    choice=c("linear","stacked"),
-                    selected = "linear",
-                    multiple = FALSE)
-      })
-    })
-    
-    observeEvent(input$graph,{
-      if(input$graph=="linear"){
+   
+    #observeEvent for graph selector 
+    observeEvent(c(input$graph,input$file1),{
+      #initial page for graph selector
+      if(input$graph=="Default"){
         #no other selector will show up
         output$loc<-renderUI({
-          selectInput("stacked_var", "Choose a stacked variable:",
-                      choices = colnames(data()),multiple = TRUE)
         })
       }
       #parameter selectors for stacked graph
-      else if(input$graph=="stacked"){
+      else if(input$graph=="Stacked"){
         output$loc<-renderUI({
-          selectInput("stacked_var", "Choose a stacked variable:",
+            selectInput("segment_var", "Choose segment variables:",
+                        choices = colnames(data()),multiple = TRUE)
+          })
+      }
+      #parameter selectors for linear graph
+      else if(input$graph=="Linear"){
+        output$loc<-renderUI({
+          selectInput("variables", "Choose variables:",
                       choices = colnames(data()),multiple = TRUE)
         })
       }
-    })#end of observeEvent for graph selector
-    
-    #create a subset of dataframe with selected variables
-    #Assume the import dataframe contains well name as the first column, field number as second column, time point as third column
-    well_name = reactive({colnames(data())[1]})
-    time_point = reactive({colnames(data())[3]})
-    
-    data_filter <- reactive({
-      #if the user have not selected variables, the table panel display the original dataframe
-      if(is.null(input$stacked_var)){
-        return(data())
-      }
-      else if(!(time_point %in% input$stacked_var)){
-        d<- data() %>% select(input$stacked_var)
-        return(d)
-      }
       
-      data() %>%
-        select(input$stacked_var) %>%
-        filter(Time.Point %in% seq(input$slider[1]:input$slider[2])) # NOt sure if the time.point will all be integer or not
-    })
-    
+    })#end of observeEvent for graph selector
     
     #Check if we need to set up groups of treatment
     observeEvent(input$set,{
@@ -115,23 +96,21 @@ if (interactive()) {
           list(
             actionButton("add","Add"),
             actionButton("delete","Delete")
-          )
-        }
+            )
+          }
+        })
       })
-    })
     
     #Check if we need to set up range of timepoint
-    observeEvent(input$stacked_var,{
-      if("Time.Point" %in% input$stacked_var){
-        output$time_range<-renderUI({
-          #if(input$time==TRUE){
+    observeEvent(input$time,{
+      output$time_range<-renderUI({
+        if(input$time==TRUE){
           max_num <- as.integer(tail(unique(data()[,3]),n=1))
           sliderInput("slider", label = h5(strong("Time Point")), min = 1, 
-                      max = max_num, step=1,
-                      value = c(1, max_num))#file depend
-          #}
-        })
-      }
+                                  max = max_num, step=1,
+                                  value = c(1, max_num))#file depend
+        }
+      })
     })
     
     #add button
@@ -146,7 +125,6 @@ if (interactive()) {
       )
     })
     
-    
     #delete button
     observeEvent(input$delete, {
       ui_todelete <- paste("div:has(>> #group",current(), ")",sep="")
@@ -160,69 +138,35 @@ if (interactive()) {
     #table tabpanel output
     output$table <- renderDataTable({
       #display dataframe
-      data_filter()
+      data()
     })
     
-    #Get current
+    #Get current number of treatments
     current <- reactiveVal(0)
     
-    #plot graph
-    observeEvent(input$plot_button,{
+    #Output all selected treatments(TEST!!!)
+    output$summary <- renderTable({
+      all_treat()
+    })
+    
+    #Plot by choice
+    
+    #Helper method
+    #Collect all treatment inputs
+    all_treat <- reactive({
       result <- list(current())
       for (i in seq(current())) {
-        #collect treatment wells for each group
         treat<-c(input[[paste0("group",as.character(i))]])
         result[[i]] <- treat
-        #creat an empty dataframe with selected parameter as column names
-        if (i==1){
-          stack_df = cbind(data_filter()[FALSE,],data.frame(GROUP = factor()))
-        }
-        treat_df <- data_filter() %>%
-          filter(ï..Well.Name %in% treat)
-        #add a column named GROUP to store the group number of the wells
-        treat_df$GROUP <- as.factor(i)
-        stack_df<- rbind(stack_df,treat_df)
       }
-      #plot a stacked graph if the user click stacked
-      if(input$graph =="stacked"){
-        df_cal <- stack_df%>%
-          group_by(GROUP,Time.Point,ï..Well.Name)%>%
-          summarize_all(list(~mean(.)))%>%
-          as.data.frame()%>%
-          gather(key = "variable", value = "value", -ï..Well.Name, -Time.Point,-GROUP)
-        output$plot <- renderPlotly({
-          p <- 
-            ggplot(df_cal,aes(x = Time.Point, y = value, fill = variable)) +
-            #making bars from only means
-            geom_bar(stat = "identity")+theme_classic()+facet_wrap(~GROUP)
-          ggplotly(p)
-        })
-      }
-      #plot a line graph if user click linear
-      else if(input$graph =="linear"){
-        df_cal <- stack_df%>%
-          group_by(GROUP,Time.Point,ï..Well.Name)%>%
-          summarize_all(list(~mean(.)))%>%
-          as.data.frame()%>%
-          gather(key = "variable", value = "value", -ï..Well.Name, -Time.Point,-GROUP)
-        output$plot <- renderPlotly({
-          p <- 
-            ggplot(df_cal,aes(x = Time.Point, y = value, fill = GROUP)) +
-            #making bars from only means
-            geom_point()+geom_smooth()+theme_classic()+ facet_wrap(~variable)
-          ggplotly(p)
-        })
-      }
+      result
     })
     
     
-    output$summary <- renderTable({
-      summary(df_cal)
-    })
     
     
   }#end of server  
-  
+
 }#end of check the interactive
 shinyApp(ui, server)
 
