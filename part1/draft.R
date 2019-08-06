@@ -16,7 +16,7 @@ aa<-FALSE
 if (interactive()) {
   #build up ui
   ui <- fluidPage(theme = shinytheme("cerulean"),
-                  titlePanel("Ben Crocker Lab"),
+                  titlePanel("Death Track R"),
                   sidebarLayout(
                     sidebarPanel(
                       #file upload
@@ -27,11 +27,9 @@ if (interactive()) {
                                   ".csv"),
                       ),
                       #selector for graph type
-                      selectInput("graph", "Choose a type of graph:",
-                                  choice=c("linear","stacked"),
-                                  selected = "linear",
-                                  multiple = FALSE),
-                      uiOutput("loc"),#parameter selector holder
+                      uiOutput("graph"),
+                      #selector for choosing parameter
+                      uiOutput("loc"),
                       uiOutput("time_range"),
                       checkboxInput("set", label = "Set Treatment", value = FALSE),
                       uiOutput("treat"),
@@ -61,9 +59,17 @@ if (interactive()) {
       df
     })
    
-    #observeEvent for graph selector 
-    observeEvent(c(input$graph,input$file1),{
-      #initial page for graph selector
+    #graph selector displays after the input file imported
+    observeEvent(input$file1,{
+      output$graph <- renderUI({
+        selectInput("graph", "Choose a type of graph:",
+                  choice=c("linear","stacked"),
+                  selected = "linear",
+                  multiple = FALSE)
+        })
+    })
+    
+    observeEvent(input$graph,{
       if(input$graph=="linear"){
         #no other selector will show up
         output$loc<-renderUI({
@@ -78,17 +84,19 @@ if (interactive()) {
                         choices = colnames(data()),multiple = TRUE)
           })
       }
-      
-      
     })#end of observeEvent for graph selector
     
     #create a subset of dataframe with selected variables
+    #Assume the import dataframe contains well name as the first column, field number as second column, time point as third column
+    well_name = reactive({colnames(data())[1]})
+    time_point = reactive({colnames(data())[3]})
+    
      data_filter <- reactive({
        #if the user have not selected variables, the table panel display the original dataframe
        if(is.null(input$stacked_var)){
          return(data())
        }
-       else if(!("Time.Point" %in% input$stacked_var)){
+       else if(!(time_point %in% input$stacked_var)){
          d<- data() %>% select(input$stacked_var)
          return(d)
        }
