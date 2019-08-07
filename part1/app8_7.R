@@ -22,6 +22,7 @@ gg_fill_hue <- function(n) {
 if (interactive()) {
   #build up ui
   ui <- fluidPage(#theme = shinytheme("cerulean"),
+
     useShinyjs(),   # use js in shiny
     titlePanel("Death TrackR"),
     sidebarLayout(
@@ -62,6 +63,9 @@ if (interactive()) {
         
       )#end of main panel
     )
+=======
+                  
+
   )#end of ui
   #build up server
   server <- function(input,output,session) {
@@ -206,10 +210,10 @@ if (interactive()) {
             facet_grid(group~.,scales="free")+
             labs (x="Time(sec)",y="mean value")+
             scale_fill_manual(values = all_colors())
+
           
           ggplotly(p) %>%
             layout(legend=l)
-          
           
         })
       }
@@ -351,8 +355,10 @@ if (interactive()) {
         color<-c(input[[paste0("col", i)]])
         result <- c(result, color)
       }
+
       if(input$graph=="Linear"){
         result <- c(result, "black")
+
       }
       result
     })
