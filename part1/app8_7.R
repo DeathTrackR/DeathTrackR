@@ -51,7 +51,7 @@ if (interactive()) {
                       #tabset for plot, summary and table
                       tabsetPanel(
                         tabPanel("Plot", uiOutput('colors'),
-                                 plotlyOutput("plot",width = "100%",height = "100%"),uiOutput("color"),downloadButton('save_p', 'Save')), 
+                                 plotlyOutput("plot",width = "100%",height = "100%")), 
                         tabPanel("Table", dataTableOutput("table"),downloadButton('save_t', 'Save')),
                         tabPanel("Summary", tableOutput("summary"),downloadButton('save_s', 'Save')),
                         tabPanel("Settings",fluidRow(
@@ -152,14 +152,22 @@ if (interactive()) {
     })
     
     #Color
-    output$colors <- renderUI({ 
-      lev <- sort(unique(input$segment_var)) # sorting so that "things" are unambigious
+    output$colors <- renderUI({
+      if(input$graph=="Stacked"){
+        lev <- sort(unique(input$segment_var))
+      }
+      else if(input$graph=="Linear"){
+        lev <- sort(unique(input$variables))
+      }
+      else{
+        lev <- c()
+      }
       cols <- gg_fill_hue(length(lev))
       
       # New IDs "colX1" so that it partly coincide with input$select...
       lapply(seq_along(lev), function(i) {
         colourpicker::colourInput(inputId = paste0("col", lev[i]),
-                                  label = paste0("Choose colour for ", lev[i]), 
+                                  label = paste0("Choose color for ", lev[i]), 
                                   value = cols[i]
         )        
       })
@@ -171,7 +179,6 @@ if (interactive()) {
       df <<- read.csv(inFile$datapath,header=TRUE,fileEncoding="UTF-8-BOM")
       
       treat.names = all_treat()
-      print(treat.names)
       #1) Stacked Graph
       if(input$graph=='Stacked'){
         
@@ -232,7 +239,8 @@ if (interactive()) {
               position = position_dodge(0.3), width = 0.2
             )+
             facet_grid(group~.,scales="free")+
-            labs (x="Time(sec)",y="mean value",title="Linear")
+            labs (x="Time(sec)",y="mean value",title="Linear")+
+            scale_color_manual(values=all_colors())
           ggplotly(p)
         })
         
@@ -260,7 +268,6 @@ if (interactive()) {
       if (is.null(inFile))
         return(NULL)
       params1<-append(params,"Time.Point",after=0)
-      print('1')
       df1 <- df %>%
         filter('Well.Name' %in% names) %>%
         select(params1) %>%
@@ -285,7 +292,6 @@ if (interactive()) {
     
     # 4. return sub table with mean, called in #6
     sub.table.mean <- function(df,names, params){
-      print("yeah")
       params1<-append(params,c("Time.Point"),after=0)
       df1<- df %>%
         filter(Well.Name %in% names) %>%
@@ -297,7 +303,6 @@ if (interactive()) {
     
     # 5. return sub table with se, called in #6
     sub.table.se <- function(df,names, params){
-      print('se')
       params1<-append(params,c("Time.Point"),after=0)
       df1<- df %>%
         filter(Well.Name %in% names) %>%
@@ -311,7 +316,6 @@ if (interactive()) {
     # 6. return a long format data frame with mean and se (can add other statistics later)
     # I recommend run local first to see how the returned table looks like
     sub.table.all <- function(df, names, params){
-      print('hello')
       # call #4 and #5, see above
       df1.mean<-sub.table.mean(df,names,params)
       df1.se<-sub.table.se(df,names,params)
@@ -321,8 +325,6 @@ if (interactive()) {
       df1_long.mean <- df1.mean %>%
         gather(key='key',value='mean',-Time.Point)
       
-      print('back')
-      
       df1_long <- merge(df1_long.mean,df1_long.se)
       
       df1_long
@@ -331,11 +333,22 @@ if (interactive()) {
     #7.Collect all colors inputs
     all_colors <- reactive({
       result <- list()
-      lev <- sort(unique(input$segment_var))
+      if(input$graph=="Stacked"){
+        lev <- sort(unique(input$segment_var))
+      }
+      else if(input$graph=="Linear"){
+        lev <- sort(unique(input$variables))
+      }
+      else{
+        lev <- c()
+      }
       for(i in lev){
         #collect treatment wells for each group
         color<-c(input[[paste0("col", i)]])
         result <- c(result, color)
+      }
+     if(input$graph=="Linear"){
+       result <- c(result, "black")
       }
       result
     })
