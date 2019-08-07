@@ -9,50 +9,59 @@ library(shinyjs)
 #library(DT)
 df<-NA
 aa<-FALSE
+
+# Function that produces default gg-colours is taken from this discussion:
+# https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
+gg_fill_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
 #shiny
 #YL build structure
 if (interactive()) {
   #build up ui
   ui <- fluidPage(#theme = shinytheme("cerulean"),
-                  useShinyjs(),   # use js in shiny
-                  titlePanel("Death TrackR"),
-                  sidebarLayout(
-                    sidebarPanel(
-                      #file upload
-                      fileInput("file1", "Import CSV File",
-                                accept = c(
-                                  "text/csv",
-                                  "text/comma-separated-values,text/plain",
-                                  ".csv"),
-                      ),
-                      #selector for graph type
-                      selectInput("graph", "Choose a type of graph:",
-                                  choice=c("Default","Stacked","Linear"),
-                                  selected = "Default",
-                                  multiple = FALSE),
-                      uiOutput("loc"),#parameter selector holder
-                      checkboxInput("time", label = "Set range of timepoint", value = FALSE),
-                      uiOutput("time_range"),
-                      checkboxInput("set", label = "Set Treatment", value = FALSE),
-                      uiOutput("treat"),
-                      #actionButton("add","Add"),
-                      #actionButton("delete","Delete"),
-                      actionButton('plot_button','Plot')
-                    ),#end of siderbar panel
-                    mainPanel(
-                      #tabset for plot, summary and table
-                      tabsetPanel(
-                        tabPanel("Plot", plotlyOutput("plot",width = "100%",height = "100%"),uiOutput("color"),downloadButton('save_p', 'Save')), 
-                        tabPanel("Table", dataTableOutput("table"),downloadButton('save_t', 'Save')),
-                        tabPanel("Summary", tableOutput("summary"),downloadButton('save_s', 'Save')),
-                        tabPanel("Settings",fluidRow(
-                          themeSelector(),
-                          sliderInput("font_size", "Font Size:", min = 80, max = 110 , value = 100)
-                        ))
-                      )
-                      
-                    )#end of main panel
-                  )
+    useShinyjs(),   # use js in shiny
+    titlePanel("Death TrackR"),
+    sidebarLayout(
+      sidebarPanel(
+        #file upload
+        fileInput("file1", "Import CSV File",
+                  accept = c(
+                    "text/csv",
+                    "text/comma-separated-values,text/plain",
+                    ".csv"),
+        ),
+        #selector for graph type
+        selectInput("graph", "Choose a type of graph:",
+                    choice=c("Default","Stacked","Linear"),
+                    selected = "Default",
+                    multiple = FALSE),
+        uiOutput("loc"),#parameter selector holder
+        checkboxInput("time", label = "Set range of timepoint", value = FALSE),
+        uiOutput("time_range"),
+        checkboxInput("set", label = "Set Treatment", value = FALSE),
+        uiOutput("treat"),
+        #actionButton("add","Add"),
+        #actionButton("delete","Delete"),
+        actionButton('plot_button','Plot')
+      ),#end of siderbar panel
+      mainPanel(
+        #tabset for plot, summary and table
+        tabsetPanel(
+          tabPanel("Plot", uiOutput('colors'),
+                   plotlyOutput("plot",width = "100%",height = "100%")), 
+          tabPanel("Table", dataTableOutput("table"),downloadButton('save_t', 'Save')),
+          tabPanel("Summary", tableOutput("summary"),downloadButton('save_s', 'Save')),
+          tabPanel("Settings",fluidRow(
+            themeSelector(),
+            sliderInput("font_size", "Font Size:", min = 80, max = 110 , value = 100)
+          ))
+        )
+        
+      )#end of main panel
+    )
   )#end of ui
   #build up server
   server <- function(input,output,session) {
@@ -61,7 +70,7 @@ if (interactive()) {
       inFile <- input$file1
       if (is.null(inFile))
         return(NULL)
-      df <- read.csv(inFile$datapath, header = TRUE)
+      df <- read.csv(inFile$datapath, header = TRUE,fileEncoding="UTF-8-BOM")
       df
     })
     #observeEvent for graph selector 
@@ -83,7 +92,7 @@ if (interactive()) {
       else if(input$graph=="Linear"){
         output$loc<-renderUI({
           selectInput("variables", "Choose variables:",
-                      choices = colnames(data()),multiple = TRUE)
+                      choices = tail(colnames(data()),-3),multiple = TRUE)
         })
       }
     })#end of observeEvent for graph selector
@@ -141,24 +150,44 @@ if (interactive()) {
     output$summary <- renderTable({
       all_treat()
     })
-    #Plot by choice
     
+    #Color
+    output$colors <- renderUI({
+      if(input$graph=="Stacked"){
+        lev <- sort(unique(input$segment_var))
+      }
+      else if(input$graph=="Linear"){
+        lev <- sort(unique(input$variables))
+      }
+      else{
+        lev <- c()
+      }
+      cols <- gg_fill_hue(length(lev))
+      
+      # New IDs "colX1" so that it partly coincide with input$select...
+      lapply(seq_along(lev), function(i) {
+        colourpicker::colourInput(inputId = paste0("col", lev[i]),
+                                  label = paste0("Choose color for ", lev[i]), 
+                                  value = cols[i]
+        )        
+      })
+    })
+    #Plot by choice
     observeEvent(input$plot_button,{
       # read file
       inFile <- input$file1
-      df <<- read.csv(inFile$datapath,header=TRUE)
+      df <<- read.csv(inFile$datapath,header=TRUE,fileEncoding="UTF-8-BOM")
       
       treat.names = all_treat()
-      print(treat.names)
       #1) Stacked Graph
       if(input$graph=='Stacked'){
         
         params = input$segment_var
-  
+        
         i<-1
         d = NULL
         for (treat in treat.names){
-
+          
           df1_long<<-sub.table.all(df,treat,params)
           d1<- df1_long %>%
             mutate(group = i) %>%
@@ -175,8 +204,13 @@ if (interactive()) {
                   strip.placement = "outside", legend.position = "right") +
             theme_classic()+
             facet_grid(group~.,scales="free")+
-            labs (x="Time(sec)",y="mean value")
-          ggplotly(p)
+            labs (x="Time(sec)",y="mean value")+
+            scale_fill_manual(values = all_colors())
+          
+          ggplotly(p) %>%
+            layout(legend=l)
+          
+          
         })
       }
       
@@ -209,7 +243,8 @@ if (interactive()) {
               position = position_dodge(0.3), width = 0.2
             )+
             facet_grid(group~.,scales="free")+
-            labs (x="Time(sec)",y="mean value",title="Linear")
+            labs (x="Time(sec)",y="mean value",title="Linear")+
+            scale_color_manual(values=all_colors())
           ggplotly(p)
         })
         
@@ -225,7 +260,7 @@ if (interactive()) {
       inFile <- input$file1
       if (is.null(inFile))
         return(NULL)
-      df <- read.csv(inFile$datapath, header = TRUE)
+      df <- read.csv(inFile$datapath, header = TRUE,fileEncoding="UTF-8-BOM")
       df
     })
     
@@ -237,7 +272,6 @@ if (interactive()) {
       if (is.null(inFile))
         return(NULL)
       params1<-append(params,"Time.Point",after=0)
-      print('1')
       df1 <- df %>%
         filter('Well.Name' %in% names) %>%
         select(params1) %>%
@@ -262,7 +296,6 @@ if (interactive()) {
     
     # 4. return sub table with mean, called in #6
     sub.table.mean <- function(df,names, params){
-      print("yeah")
       params1<-append(params,c("Time.Point"),after=0)
       df1<- df %>%
         filter(Well.Name %in% names) %>%
@@ -274,21 +307,19 @@ if (interactive()) {
     
     # 5. return sub table with se, called in #6
     sub.table.se <- function(df,names, params){
-      print('se')
       params1<-append(params,c("Time.Point"),after=0)
       df1<- df %>%
         filter(Well.Name %in% names) %>%
         select(params1) %>%
         group_by(Time.Point) %>%
         summarise_all(list(~std.error(.)))
-
+      
       df1
     }
     
     # 6. return a long format data frame with mean and se (can add other statistics later)
     # I recommend run local first to see how the returned table looks like
     sub.table.all <- function(df, names, params){
-      print('hello')
       # call #4 and #5, see above
       df1.mean<-sub.table.mean(df,names,params)
       df1.se<-sub.table.se(df,names,params)
@@ -298,12 +329,33 @@ if (interactive()) {
       df1_long.mean <- df1.mean %>%
         gather(key='key',value='mean',-Time.Point)
       
-      print('back')
-      
       df1_long <- merge(df1_long.mean,df1_long.se)
       
       df1_long
     }
+    
+    #7.Collect all colors inputs
+    all_colors <- reactive({
+      result <- list()
+      if(input$graph=="Stacked"){
+        lev <- sort(unique(input$segment_var))
+      }
+      else if(input$graph=="Linear"){
+        lev <- sort(unique(input$variables))
+      }
+      else{
+        lev <- c()
+      }
+      for(i in lev){
+        #collect treatment wells for each group
+        color<-c(input[[paste0("col", i)]])
+        result <- c(result, color)
+      }
+      if(input$graph=="Linear"){
+        result <- c(result, "black")
+      }
+      result
+    })
     
     themeSelector <- function() {
       div(
