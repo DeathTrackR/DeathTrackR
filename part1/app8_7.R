@@ -22,46 +22,50 @@ gg_fill_hue <- function(n) {
 if (interactive()) {
   #build up ui
   ui <- fluidPage(#theme = shinytheme("cerulean"),
-                  useShinyjs(),   # use js in shiny
-                  titlePanel("Death TrackR"),
-                  sidebarLayout(
-                    sidebarPanel(
-                      #file upload
-                      fileInput("file1", "Import CSV File",
-                                accept = c(
-                                  "text/csv",
-                                  "text/comma-separated-values,text/plain",
-                                  ".csv"),
-                      ),
-                      #selector for graph type
-                      selectInput("graph", "Choose a type of graph:",
-                                  choice=c("Default","Stacked","Linear"),
-                                  selected = "Default",
-                                  multiple = FALSE),
-                      uiOutput("loc"),#parameter selector holder
-                      checkboxInput("time", label = "Set range of timepoint", value = FALSE),
-                      uiOutput("time_range"),
-                      checkboxInput("set", label = "Set Treatment", value = FALSE),
-                      uiOutput("treat"),
-                      #actionButton("add","Add"),
-                      #actionButton("delete","Delete"),
-                      actionButton('plot_button','Plot')
-                    ),#end of siderbar panel
-                    mainPanel(
-                      #tabset for plot, summary and table
-                      tabsetPanel(
-                        tabPanel("Plot", uiOutput('colors'),
-                                 plotlyOutput("plot",width = "100%",height = "100%")), 
-                        tabPanel("Table", dataTableOutput("table"),downloadButton('save_t', 'Save')),
-                        tabPanel("Summary", tableOutput("summary"),downloadButton('save_s', 'Save')),
-                        tabPanel("Settings",fluidRow(
-                          themeSelector(),
-                          sliderInput("font_size", "Font Size:", min = 80, max = 110 , value = 100)
-                        ))
-                      )
-                      
-                    )#end of main panel
-                  )
+
+    useShinyjs(),   # use js in shiny
+    titlePanel("Death TrackR"),
+    sidebarLayout(
+      sidebarPanel(
+        #file upload
+        fileInput("file1", "Import CSV File",
+                  accept = c(
+                    "text/csv",
+                    "text/comma-separated-values,text/plain",
+                    ".csv"),
+        ),
+        #selector for graph type
+        selectInput("graph", "Choose a type of graph:",
+                    choice=c("Default","Stacked","Linear"),
+                    selected = "Default",
+                    multiple = FALSE),
+        uiOutput("loc"),#parameter selector holder
+        checkboxInput("time", label = "Set range of timepoint", value = FALSE),
+        uiOutput("time_range"),
+        checkboxInput("set", label = "Set Treatment", value = FALSE),
+        uiOutput("treat"),
+        #actionButton("add","Add"),
+        #actionButton("delete","Delete"),
+        actionButton('plot_button','Plot')
+      ),#end of siderbar panel
+      mainPanel(
+        #tabset for plot, summary and table
+        tabsetPanel(
+          tabPanel("Plot", uiOutput('colors'),
+                   plotlyOutput("plot",width = "100%",height = "100%")), 
+          tabPanel("Table", dataTableOutput("table"),downloadButton('save_t', 'Save')),
+          tabPanel("Summary", tableOutput("summary"),downloadButton('save_s', 'Save')),
+          tabPanel("Settings",fluidRow(
+            themeSelector(),
+            sliderInput("font_size", "Font Size:", min = 80, max = 110 , value = 100)
+          ))
+        )
+        
+      )#end of main panel
+    )
+=======
+                  
+
   )#end of ui
   #build up server
   server <- function(input,output,session) {
@@ -92,7 +96,7 @@ if (interactive()) {
       else if(input$graph=="Linear"){
         output$loc<-renderUI({
           selectInput("variables", "Choose variables:",
-                      choices = colnames(data()),multiple = TRUE)
+                      choices = tail(colnames(data()),-3),multiple = TRUE)
         })
       }
     })#end of observeEvent for graph selector
@@ -183,11 +187,11 @@ if (interactive()) {
       if(input$graph=='Stacked'){
         
         params = input$segment_var
-  
+        
         i<-1
         d = NULL
         for (treat in treat.names){
-
+          
           df1_long<<-sub.table.all(df,treat,params)
           d1<- df1_long %>%
             mutate(group = i) %>%
@@ -206,7 +210,11 @@ if (interactive()) {
             facet_grid(group~.,scales="free")+
             labs (x="Time(sec)",y="mean value")+
             scale_fill_manual(values = all_colors())
-          ggplotly(p)
+
+          
+          ggplotly(p) %>%
+            layout(legend=l)
+          
         })
       }
       
@@ -309,7 +317,7 @@ if (interactive()) {
         select(params1) %>%
         group_by(Time.Point) %>%
         summarise_all(list(~std.error(.)))
-
+      
       df1
     }
     
@@ -347,8 +355,10 @@ if (interactive()) {
         color<-c(input[[paste0("col", i)]])
         result <- c(result, color)
       }
-     if(input$graph=="Linear"){
-       result <- c(result, "black")
+
+      if(input$graph=="Linear"){
+        result <- c(result, "black")
+
       }
       result
     })
