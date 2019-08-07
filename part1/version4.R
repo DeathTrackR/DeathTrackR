@@ -9,6 +9,7 @@ library(colourpicker)
 
 df<-NA
 aa<-FALSE
+#calculating the mean and SEM
 
 #shiny
 #YL build structure
