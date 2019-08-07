@@ -9,6 +9,14 @@ library(shinyjs)
 #library(DT)
 df<-NA
 aa<-FALSE
+
+# Function that produces default gg-colours is taken from this discussion:
+# https://stackoverflow.com/questions/8197559/emulate-ggplot2-default-color-palette
+gg_fill_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
 #shiny
 #YL build structure
 if (interactive()) {
@@ -42,7 +50,8 @@ if (interactive()) {
                     mainPanel(
                       #tabset for plot, summary and table
                       tabsetPanel(
-                        tabPanel("Plot", plotlyOutput("plot",width = "100%",height = "100%"),uiOutput("color"),downloadButton('save_p', 'Save')), 
+                        tabPanel("Plot", uiOutput('colors'),
+                                 plotlyOutput("plot",width = "100%",height = "100%"),uiOutput("color"),downloadButton('save_p', 'Save')), 
                         tabPanel("Table", dataTableOutput("table"),downloadButton('save_t', 'Save')),
                         tabPanel("Summary", tableOutput("summary"),downloadButton('save_s', 'Save')),
                         tabPanel("Settings",fluidRow(
@@ -61,7 +70,7 @@ if (interactive()) {
       inFile <- input$file1
       if (is.null(inFile))
         return(NULL)
-      df <- read.csv(inFile$datapath, header = TRUE)
+      df <- read.csv(inFile$datapath, header = TRUE,fileEncoding="UTF-8-BOM")
       df
     })
     #observeEvent for graph selector 
@@ -141,12 +150,25 @@ if (interactive()) {
     output$summary <- renderTable({
       all_treat()
     })
-    #Plot by choice
     
+    #Color
+    output$colors <- renderUI({ 
+      lev <- sort(unique(input$segment_var)) # sorting so that "things" are unambigious
+      cols <- gg_fill_hue(length(lev))
+      
+      # New IDs "colX1" so that it partly coincide with input$select...
+      lapply(seq_along(lev), function(i) {
+        colourpicker::colourInput(inputId = paste0("col", lev[i]),
+                                  label = paste0("Choose colour for ", lev[i]), 
+                                  value = cols[i]
+        )        
+      })
+    })
+    #Plot by choice
     observeEvent(input$plot_button,{
       # read file
       inFile <- input$file1
-      df <<- read.csv(inFile$datapath,header=TRUE)
+      df <<- read.csv(inFile$datapath,header=TRUE,fileEncoding="UTF-8-BOM")
       
       treat.names = all_treat()
       print(treat.names)
@@ -175,7 +197,8 @@ if (interactive()) {
                   strip.placement = "outside", legend.position = "right") +
             theme_classic()+
             facet_grid(group~.,scales="free")+
-            labs (x="Time(sec)",y="mean value")
+            labs (x="Time(sec)",y="mean value")+
+            scale_fill_manual(values = all_colors())
           ggplotly(p)
         })
       }
@@ -225,7 +248,7 @@ if (interactive()) {
       inFile <- input$file1
       if (is.null(inFile))
         return(NULL)
-      df <- read.csv(inFile$datapath, header = TRUE)
+      df <- read.csv(inFile$datapath, header = TRUE,fileEncoding="UTF-8-BOM")
       df
     })
     
@@ -304,6 +327,18 @@ if (interactive()) {
       
       df1_long
     }
+    
+    #7.Collect all colors inputs
+    all_colors <- reactive({
+      result <- list()
+      lev <- sort(unique(input$segment_var))
+      for(i in lev){
+        #collect treatment wells for each group
+        color<-c(input[[paste0("col", i)]])
+        result <- c(result, color)
+      }
+      result
+    })
     
     themeSelector <- function() {
       div(
