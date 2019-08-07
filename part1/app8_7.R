@@ -212,8 +212,7 @@ if (interactive()) {
             scale_fill_manual(values = all_colors())
           
           
-          ggplotly(p) %>%
-            layout(legend=l)
+          ggplotly(p)
           
         })
       }
