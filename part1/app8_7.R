@@ -203,7 +203,7 @@ if (interactive()) {
         output$plot <- renderPlotly({
           p <- 
             ggplot(d,aes(x=Time.Point,y=mean, fill=key))+
-            geom_bar(stat = "identity") +
+            geom_bar(stat = "identity",position="fill") +
             theme(strip.background = element_blank(), 
                   strip.placement = "outside", legend.position = "right") +
             theme_classic()+
