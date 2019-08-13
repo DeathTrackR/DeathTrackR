@@ -202,17 +202,23 @@ if (interactive()) {
         
         output$plot <- renderPlotly({
           p <- 
-            ggplot(d,aes(x=Time.Point,y=mean, fill=key))+
+            ggplot(d,aes(x=Time.Point,y=mean, fill=factor(key)))+
             geom_bar(stat = "identity",position="fill") +
-            theme(strip.background = element_blank(), 
-                  strip.placement = "outside", legend.position = "right") +
             theme_classic()+
             facet_grid(group~.,scales="free")+
             labs (x="Time(sec)",y="mean value")+
-            scale_fill_manual(values = all_colors())
+            scale_fill_manual(values = all_colors()) +
+            theme(strip.background = element_blank(), 
+                  strip.placement = "outside")
+          #, legend.position = "bottom") 
           
           
-          ggplotly(p)
+          ggplotly(p) %>%
+            layout(legend = list(orientation = "h",   
+                                 xanchor = "center",
+                                 x=1,
+                                 yanchor = "bottom",
+                                 y=-0.2))            
           
         })
       }
