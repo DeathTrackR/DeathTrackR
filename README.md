@@ -15,7 +15,7 @@ The DeathTrackR app allows users to import .csv files generated from automated a
 
 
 # Team members: 
-Yushan Liu, Huilai Miao, Cathleen Pena, Linh Le, Hainan Xiong, Ricky Peng. For questions (or suggestions and improvements), please contact us bcroker@ucsd.edu. This is a work in progress, so we welcome your feedback!
+Yushan Liu, Huilai Miao, Cathleen Pena, Linh Le, Hainan Xiong, Weiqi Ricky Peng. For questions (or suggestions and improvements), please contact us bcroker@ucsd.edu. This is a work in progress, so we welcome your feedback!
 
 # License: 
 
