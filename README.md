@@ -23,7 +23,28 @@ Yushan Liu, Huilai Miao, Cathleen Pena, Linh Le, Hainan Xiong, Weiqi Ricky Peng.
 This work is supported by NHLBI grant 5R01HL124209-05, and overseen by Dr. Ben Croker and Stephanie Labou, UCSD.
 
 # References: 
-[1] Galluzi, Lorenzo, et. al. “Molecular mechanisms of cell death: recommendations of the Nomenclature Committee on Cell Death 2018.” Cell Death and Differentiation 25, 486–541 (2018)
+Galluzi, Lorenzo, et. al. “Molecular mechanisms of cell death: recommendations of the Nomenclature Committee on Cell Death 2018.” Cell Death and Differentiation 25, 486–541 (2018)
+
+R Core Team (2020). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
+
+Winston Chang, Joe Cheng, JJ Allaire, Yihui Xie and Jonathan McPherson (2020). shiny:
+  Web Application Framework for R. R package version 1.4.0.2.
+  https://CRAN.R-project.org/package=shiny
+
+Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686
+
+Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2018). dplyr: A Grammar of Data Manipulation. R package version 0.7.6. https://CRAN.R-project.org/package=dplyr
+
+Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, https://ggplot2.tidyverse.org.
+
+J L (2006). “Plotrix: a package in the red light district of R.” R-News, 6(4), 8-12.
+
+Yihui Xie, Joe Cheng and Xianying Tan (2020). DT: A Wrapper of the JavaScript Library
+  'DataTables'. R package version 0.16. https://CRAN.R-project.org/package=DT
+  
+Lemon, J. (2006) Plotrix: a package in the red light district of R. R-News, 6(4):
+  8-12.
+
 
 
 
